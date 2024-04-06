@@ -75,48 +75,48 @@ class ItemInventory {
     }
 }
 
-interface VendingState {
+interface IVendingState {
     insertMoney(amount: number): string;
     selectItem(item: Item): string;
-    refundChange(): number;
+    refundChange(): number | string;
     dispense(): string | null;
     cancel(): void;
 }
 
-class NoMoneyState implements VendingState {
+abstract class VendingState implements IVendingState {
+    constructor(protected vendingMachine: VendingMachine) { }
+    insertMoney(amount: number): string {
+        return "Money can't be dispensed";
+    };
+    selectItem(item: Item): string {
+        return "Item can't be selected, please insert money or wait to dispense";
+    };
+    refundChange(): number | string {
+        return "Nothing to refund";
+    };
+    dispense(): string | null {
+        return "Nothing to dispense"
+    };
+    cancel(): void {
+        this.refundChange();
+        this.vendingMachine.setState(new NoMoneyState(this.vendingMachine));
+    };
+}
 
-    constructor(private vendingMachine: VendingMachine) { }
 
+class NoMoneyState extends VendingState implements IVendingState {
     insertMoney(amount: number): string {
         const moneyInserted = this.vendingMachine.insertMoney(amount);
         this.vendingMachine.setState(new HasMoneyState(this.vendingMachine));
         return `Total money inserted ${moneyInserted}`;
     }
-
-    selectItem(item: Item): string {
-        return "Please insert money first";
-    }
-
-    refundChange(): number {
-        console.log(`Refund applicable ${0}`);
-        return 0;
-    }
-
-    dispense(): string | null {
-        console.log(`No dispense applicable`);
-        return null;
-    }
-
-    cancel(): void {
-        console.log(`Nothing to cancel`);
-    }
 }
 
-class HasMoneyState implements VendingState {
-    constructor(private vendingMachine: VendingMachine) { }
+class HasMoneyState extends VendingState implements IVendingState {
 
     insertMoney(amount: number): string {
         const moneyInserted = this.vendingMachine.insertMoney(amount);
+        this.vendingMachine.setState(new HasMoneyState(this.vendingMachine));
         return `Total money inserted ${moneyInserted}`;
     }
 
@@ -140,41 +140,14 @@ class HasMoneyState implements VendingState {
         if (!itemPrice) return currentMoney;
         return currentMoney - itemPrice;
     }
-
-    dispense(): string {
-        return `First insert money and select product`;
-    }
-
-    cancel(): void {
-        this.refundChange();
-        this.vendingMachine.setState(new NoMoneyState(this.vendingMachine));
-    }
 }
 
-class DispenseState implements VendingState {
-    constructor(private vendingMachine: VendingMachine) { }
-
-    insertMoney(amount: number): string {
-        throw new Error("Machine dispensing product! Money can't be inserted.");
-    }
-
-    selectItem(item: Item): string {
-        throw new Error("Machine dispensing product!Item can't be selected.");
-    }
-
-    refundChange(): number {
-        throw new Error("Machine dispensing product! No refund applicable");
-    }
-
+class DispenseState extends VendingState implements IVendingState {
     dispense(): string {
         const itemSelected = this.vendingMachine.getItemSelected();
         if (!itemSelected) return "No Item is selected";
         this.vendingMachine.getInventory().removeItem(itemSelected);
         return `Item ${itemSelected} is dispensed`;
-    }
-
-    cancel(): void {
-        throw new Error("Machine dispensing product! No cancel applicable");
     }
 }
 
@@ -183,7 +156,7 @@ class VendingMachine {
     private inventory: ItemInventory;
     private currentMoney: number;
     private itemSelected: Item | null;
-    private currentState: VendingState;
+    private currentState: IVendingState;
     private pricing: Pricing;
 
     constructor() {
@@ -194,11 +167,11 @@ class VendingMachine {
         this.currentState = new NoMoneyState(this);
     }
 
-    setState(state: VendingState): void {
+    setState(state: IVendingState): void {
         this.currentState = state;
     }
 
-    getState(): VendingState {
+    getState(): IVendingState {
         return this.currentState
     }
 

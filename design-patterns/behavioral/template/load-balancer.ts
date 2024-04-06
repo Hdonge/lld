@@ -1,3 +1,22 @@
+/*****
+ *  Load Balancer 
+ * Requirement: 
+ *  - Should be able to add Server
+ *  - Should be able to remove Server
+ *  - Should be able to route request
+ *  - There should be multiple ways request can be routed
+ *         - Round Robin
+ *         - Least Connection
+ *  
+ * 
+ * Entities
+ *  - Server
+ *  - LoadBalancer
+ * 
+ * 
+ */
+
+
 interface Server {
     id: number;
     address: string;
@@ -5,7 +24,13 @@ interface Server {
 }
 
 //abstract class representing the template of load balancing.
-abstract class LoadBalancer {
+interface ILoadBalancer {
+    addServer(server: Server): void;
+    removeServer(serverId: number): void;
+    routeRequest(): Server | null;
+}
+
+abstract class LoadBalancer implements ILoadBalancer {
     servers: Array<Server> = [];
 
     addServer(server: Server): void {
@@ -18,7 +43,7 @@ abstract class LoadBalancer {
 }
 
 // Concrete subclass for balanicng load using round robin method.
-class RoundRobinLoadBalancer extends LoadBalancer {
+class RoundRobinLoadBalancer extends LoadBalancer implements ILoadBalancer {
     constructor(private currentIndex: number = 0) {
         super();
     }

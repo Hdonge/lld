@@ -6,19 +6,19 @@ class PaymentService {
     processPayment(amount: number, paymentMethod: string): boolean { return true; }
 }
 
-class shippingService {
-    shipOrder(productId: string, quantity: number, address: string): string { return 'SHIPPING-TRACKING-NUMBER'; }
+class OrderService {
+    createOrder(productId: string, quantity: number, address: string): string { return 'SHIPPING-TRACKING-NUMBER'; }
 }
 
 class CartManagerFacade {
     private inventoryService: InventoryService;
     private paymentService: PaymentService;
-    private shippingService: shippingService;
+    private orderService: OrderService;
 
     constructor() {
         this.inventoryService = new InventoryService();
         this.paymentService = new PaymentService();
-        this.shippingService = new shippingService();
+        this.orderService = new OrderService();
     }
 
     placeOrder(productId: string, quantity: number, address: string, paymentMethod: string): string | undefined {
@@ -28,7 +28,7 @@ class CartManagerFacade {
         const isPaymentSuccessful = this.paymentService.processPayment(quantity, paymentMethod);
         if (!isPaymentSuccessful) return undefined;
 
-        const trackingNumber = this.shippingService.shipOrder(productId, quantity, address);
+        const trackingNumber = this.orderService.createOrder(productId, quantity, address);
         return trackingNumber;
     }
 }

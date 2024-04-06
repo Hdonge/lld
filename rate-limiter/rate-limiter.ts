@@ -1,3 +1,15 @@
+/**
+ * Requirement
+ *  - It should be able check if too many requests are coming
+ *  - Should be able grant or reject access for further process
+ *  - Should be able to implement different strategies/techniques for rate limiting based on choice
+ * 
+ * Entities
+ *  - Rate limiter 
+ *  - UserWindow
+ */
+
+
 interface RateLimiter {
     grantAccess(): boolean;
 }
@@ -28,22 +40,6 @@ class SlidingWindow implements RateLimiter {
     }
 }
 
-class UserSlidingWindow {
-    private bucket: Map<number, SlidingWindow> = new Map();
-    constructor(id: number) {
-        this.bucket.set(id, new SlidingWindow(10, 1));
-    }
-
-    accessApplication(id: number): void {
-        if (this.bucket.get(id)?.grantAccess()) {
-            console.log("Able to access");
-        } else {
-            console.log("To many requests");
-        }
-    }
-}
-
-
 class LeakyBucket implements RateLimiter {
     grantAccess(): boolean {
         throw new Error("Method not implemented.");
@@ -51,13 +47,36 @@ class LeakyBucket implements RateLimiter {
 }
 
 
-class UserLeakyBukete {
+interface UserWindow {
+    accessAplication(requestUrl: string): boolean;
+}
 
+class UserSlidingWindow implements UserWindow {
+    private requestBucketMap: Map<string, SlidingWindow> = new Map();
+    constructor(requestUrl: string) {
+        this.requestBucketMap.set(requestUrl, new SlidingWindow(10, 1));
+    }
+
+    accessApplication(requestUrl: string): boolean {
+        if (this.bucket.get(requestUrl)?.grantAccess()) {
+            console.log("Able to access");
+            return true;
+        } else {
+            console.log("To many requests");
+            return false;
+        }
+    }
+}
+
+class UserLeakyBucket implements UserWindow{
+    accessAplication(requestUrl: string): boolean {
+        return false;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 const userBucket: UserSlidingWindow = new UserSlidingWindow(1);
 for (let i = 0; i < 12; i++) {
-    userBucket.accessApplication(1);
+    userBucket.accessApplication('http://foobar.com/products');
 }
